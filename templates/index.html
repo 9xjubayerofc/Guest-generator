@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost Hosting - Enter Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
+        .card { background: #111; border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .term-body { height: 220px; background: #000; color: #00ff41; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid #222; white-space: pre-wrap; margin-top: 10px; border-radius: 5px; }
+        
+        /* ইনপুট গ্রুপ স্টাইল */
+        .input-group { display: flex; gap: 5px; margin-top: 10px; }
+        .input-group input { flex: 1; padding: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; outline: none; }
+        
+        .btn { padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; margin: 5px 5px 0 0; text-decoration: none; display: inline-block; }
+        .btn-run { background: #00ffcc; color: #000; }
+        .btn-stop { background: #ff4757; color: #fff; }
+        .btn-enter { background: #007bff; color: #fff; min-width: 80px; } /* ENTER বাটন */
+        .btn-search { background: #f39c12; color: #fff; min-width: 80px; } /* SEARCH বাটন */
+    </style>
+</head>
+<body>
+
+<h2 style="color:#00ffcc; text-align:center;">GHOST PANEL</h2>
+
+<div class="card">
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit" class="btn btn-run" style="width:100%; margin-top:10px;">DEPLOY ZIP</button>
+    </form>
+</div>
+
+{% for app in apps %}
+<div class="card">
+    <strong>{{ app.name }}</strong> <span id="st-{{ app.name }}" style="font-size:11px;">OFFLINE</span>
+    <div id="log-{{ app.name }}" class="term-body">বট স্টার্ট করুন...</div>
+    
+    <div class="input-group">
+        <input type="text" id="in-{{ app.name }}" placeholder="Menu selection (1, 2)" onkeydown="if(event.key==='Enter') sendCmd('{{ app.name }}')">
+        <button onclick="sendCmd('{{ app.name }}')" class="btn btn-enter">ENTER</button>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="srch-{{ app.name }}" placeholder="File Name (Accounts-BD.json)">
+        <button onclick="searchDL('{{ app.name }}')" class="btn btn-search">SEARCH</button>
+    </div>
+
+    <div style="margin-top:10px;">
+        <a href="/run/{{ app.name }}" class="btn btn-run">START</a>
+        <a href="/stop/{{ app.name }}" class="btn btn-stop">STOP</a>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    function update() {
+        {% for app in apps %}
+        fetch('/get_log/{{ app.name }}').then(r => r.json()).then(data => {
+            const lb = document.getElementById('log-{{ app.name }}');
+            const st = document.getElementById('st-{{ app.name }}');
+            st.innerText = data.status;
+            st.style.color = data.status === "RUNNING" ? "#0f0" : "#f00";
+            if(data.log && lb.getAttribute('data-last') !== data.log) {
+                lb.innerText = data.log; lb.setAttribute('data-last', data.log);
+                lb.scrollTop = lb.scrollHeight;
+            }
+        });
+        {% endfor %}
+    }
+    setInterval(update, 2000);
+
+    function sendCmd(name) {
+        const inp = document.getElementById('in-' + name);
+        if(!inp.value) return;
+        fetch('/run_termux_cmd', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({project: name, command: inp.value})
+        });
+        inp.value = "";
+    }
+
+    function searchDL(name) {
+        const file = document.getElementById('srch-' + name).value;
+        if(!file) return;
+        fetch('/search_and_download', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({project: name, filename: file})
+        }).then(r => r.json()).then(data => {
+            if(data.status === 'found') window.location.href = data.url;
+            else Swal.fire('Error', 'ফাইলটি খুঁজে পাওয়া যায়নি!', 'error');
+        });
+    }
+</script>
+</body>
+</html>
