@@ -1,99 +1,188 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghost Hosting - Enter Edition</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bot Manager Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
-        .card { background: #111; border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
-        .term-body { height: 220px; background: #000; color: #00ff41; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 11px; border: 1px solid #222; white-space: pre-wrap; margin-top: 10px; border-radius: 5px; }
-        
-        /* ইনপুট গ্রুপ স্টাইল */
-        .input-group { display: flex; gap: 5px; margin-top: 10px; }
-        .input-group input { flex: 1; padding: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; outline: none; }
-        
-        .btn { padding: 10px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; margin: 5px 5px 0 0; text-decoration: none; display: inline-block; }
-        .btn-run { background: #00ffcc; color: #000; }
-        .btn-stop { background: #ff4757; color: #fff; }
-        .btn-enter { background: #007bff; color: #fff; min-width: 80px; } /* ENTER বাটন */
-        .btn-search { background: #f39c12; color: #fff; min-width: 80px; } /* SEARCH বাটন */
+        body { background-color: #0b0f19; color: #f8fafc; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass-card { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+        .log-container {
+            background: #000000;
+            color: #10b981;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            border-left: 3px solid #1e293b;
+        }
+        /* Mobile scrollbar */
+        .log-container::-webkit-scrollbar { width: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="p-4 pb-12">
 
-<h2 style="color:#00ffcc; text-align:center;">GHOST PANEL</h2>
+    <div class="max-w-md mx-auto">
+        <header class="mb-6 flex justify-between items-center bg-slate-900/50 p-3 rounded-2xl border border-white/5">
+            <div>
+                <h1 class="text-xl font-bold text-blue-500 flex items-center gap-2">
+                    <i class="fas fa-server text-sm"></i> MR GHOST<span class="text-red">GUEST GENERATOR</span>
+                </h1>
+            </div>
+            <button onclick="location.reload()" class="h-8 w-8 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition">
+                <i class="fas fa-sync-alt text-xs text-blue-400"></i>
+            </button>
+        </header>
+        
+        <div class="glass-card p-5 mb-6 shadow-2xl">
+            <h2 class="text-[11px] font-black text-gray-400 uppercase tracking-tighter mb-4 flex items-center gap-2">
+                <i class="fas fa-upload text-blue-500"></i> Deploy New Instance
+            </h2>
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <div class="relative group">
+                    <input type="file" name="file" id="fileInput" class="hidden" onchange="updateFileName()">
+                    <label for="fileInput" class="flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-xl py-4 cursor-pointer hover:border-blue-500/50 transition bg-white/5">
+                        <i class="fas fa-file-zipper text-gray-500 mb-1"></i>
+                        <span id="fileLabel" class="text-xs text-gray-400 italic">Tap to select bot.zip</span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-white transition transform active:scale-95 shadow-lg shadow-blue-900/40">
+                    <i class="fas fa-rocket mr-1"></i> Launch Bot
+                </button>
+            </form>
+        </div>
 
-<div class="card">
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <button type="submit" class="btn btn-run" style="width:100%; margin-top:10px;">DEPLOY ZIP</button>
-    </form>
-</div>
+        <div class="space-y-6">
+            {% for app in apps %}
+            <div class="glass-card overflow-hidden border border-white/5">
+                <div class="p-4 flex justify-between items-center bg-white/5 border-b border-white/5">
+                    <div class="flex items-center gap-2">
+                        <div class="h-2 w-2 rounded-full {{ 'bg-green-500 animate-pulse' if app.running else 'bg-red-500' }}"></div>
+                        <h3 class="font-bold text-sm text-blue-100 truncate w-32">{{ app.name }}</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        {% if not app.running %}
+                        <a href="/run/{{ app.name }}" class="bg-green-600 px-3 py-1.5 rounded-lg text-[10px] font-black text-white flex items-center gap-1 shadow-lg shadow-green-900/20">
+                            <i class="fas fa-play"></i> START
+                        </a>
+                        {% else %}
+                        <a href="/stop/{{ app.name }}" class="bg-red-600 px-3 py-1.5 rounded-lg text-[10px] font-black text-white flex items-center gap-1 shadow-lg shadow-red-900/20">
+                            <i class="fas fa-stop"></i> STOP
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
 
-{% for app in apps %}
-<div class="card">
-    <strong>{{ app.name }}</strong> <span id="st-{{ app.name }}" style="font-size:11px;">OFFLINE</span>
-    <div id="log-{{ app.name }}" class="term-body">বট স্টার্ট করুন...</div>
-    
-    <div class="input-group">
-        <input type="text" id="in-{{ app.name }}" placeholder="Menu selection (1, 2)" onkeydown="if(event.key==='Enter') sendCmd('{{ app.name }}')">
-        <button onclick="sendCmd('{{ app.name }}')" class="btn btn-enter">ENTER</button>
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest italic">Live Terminal Output</span>
+                        <button onclick="copyLogs('log-{{ app.name }}')" class="text-[9px] text-blue-400 font-bold hover:text-white">
+                            <i class="fas fa-copy"></i> COPY
+                        </button>
+                    </div>
+
+                    <div id="log-{{ app.name }}" class="log-container h-56 rounded-xl p-3 text-[10px] mb-4 shadow-inner border border-black">
+                        Fetching logs...
+                    </div>
+
+                    <div class="flex gap-2 mb-5">
+                        <div class="relative flex-1">
+                            <i class="fas fa-angle-right absolute left-3 top-2.5 text-gray-600 text-xs"></i>
+                            <input type="text" id="cmd-{{ app.name }}" onkeypress="if(event.key==='Enter') sendCmd('{{app.name}}')" placeholder="Enter command..." class="w-full bg-black/60 border border-white/10 rounded-xl pl-7 pr-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                        <button onclick="sendCmd('{{ app.name }}')" class="bg-blue-600/10 text-blue-500 w-10 h-9 rounded-xl border border-blue-500/20 hover:bg-blue-600 hover:text-white transition">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/5 bg-slate-800/20 rounded-b-xl -mx-4 px-4 pb-2 mt-2">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="h-6 w-6 bg-blue-500/10 rounded flex items-center justify-center">
+                                <i class="fas fa-folder-open text-[10px] text-blue-400"></i>
+                            </div>
+                            <span class="text-[10px] text-gray-400 font-bold">Project File Explorer</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="dl-{{ app.name }}" placeholder="Search file (e.g. config.json)" class="flex-1 bg-transparent border-b border-white/10 text-xs py-1 focus:outline-none focus:border-blue-500 text-gray-300">
+                            <button onclick="downloadFile('{{ app.name }}')" class="bg-white/5 hover:bg-blue-600 transition h-8 px-3 rounded-lg text-[10px] font-bold text-blue-400 hover:text-white flex items-center gap-2">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="input-group">
-        <input type="text" id="srch-{{ app.name }}" placeholder="File Name (Accounts-BD.json)">
-        <button onclick="searchDL('{{ app.name }}')" class="btn btn-search">SEARCH</button>
-    </div>
+    <script>
+        // ফাইল সিলেক্ট করলে নাম দেখানোর জন্য
+        function updateFileName() {
+            const input = document.getElementById('fileInput');
+            const label = document.getElementById('fileLabel');
+            if(input.files.length > 0) label.innerText = "Selected: " + input.files[0].name;
+        }
 
-    <div style="margin-top:10px;">
-        <a href="/run/{{ app.name }}" class="btn btn-run">START</a>
-        <a href="/stop/{{ app.name }}" class="btn btn-stop">STOP</a>
-    </div>
-</div>
-{% endfor %}
+        // লগ কপি করার সুবিধা
+        function copyLogs(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            alert("Logs copied to clipboard!");
+        }
 
-<script>
-    function update() {
-        {% for app in apps %}
-        fetch('/get_log/{{ app.name }}').then(r => r.json()).then(data => {
-            const lb = document.getElementById('log-{{ app.name }}');
-            const st = document.getElementById('st-{{ app.name }}');
-            st.innerText = data.status;
-            st.style.color = data.status === "RUNNING" ? "#0f0" : "#f00";
-            if(data.log && lb.getAttribute('data-last') !== data.log) {
-                lb.innerText = data.log; lb.setAttribute('data-last', data.log);
-                lb.scrollTop = lb.scrollHeight;
-            }
-        });
-        {% endfor %}
-    }
-    setInterval(update, 2000);
+        function refreshLogs() {
+            {% for app in apps %}
+            fetch('/get_log/{{ app.name }}')
+                .then(res => res.json())
+                .then(data => {
+                    const el = document.getElementById('log-{{ app.name }}');
+                    if (el.textContent !== data.log) {
+                        el.textContent = data.log;
+                        el.scrollTop = el.scrollHeight;
+                    }
+                });
+            {% endfor %}
+        }
+        setInterval(refreshLogs, 3000);
 
-    function sendCmd(name) {
-        const inp = document.getElementById('in-' + name);
-        if(!inp.value) return;
-        fetch('/run_termux_cmd', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({project: name, command: inp.value})
-        });
-        inp.value = "";
-    }
+        function sendCmd(name) {
+            const input = document.getElementById(`cmd-${name}`);
+            const val = input.value;
+            if(!val) return;
+            fetch('/run_termux_cmd', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({project: name, command: val})
+            }).then(() => { 
+                input.value = '';
+                input.blur(); // কমান্ড পাঠানোর পর মোবাইল কিবোর্ড নিচে চলে যাবে
+            });
+        }
 
-    function searchDL(name) {
-        const file = document.getElementById('srch-' + name).value;
-        if(!file) return;
-        fetch('/search_and_download', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({project: name, filename: file})
-        }).then(r => r.json()).then(data => {
-            if(data.status === 'found') window.location.href = data.url;
-            else Swal.fire('Error', 'ফাইলটি খুঁজে পাওয়া যায়নি!', 'error');
-        });
-    }
-</script>
+        function downloadFile(name) {
+            const file = document.getElementById(`dl-${name}`).value;
+            if(!file) return alert("Please enter a filename!");
+            
+            fetch('/search_and_download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({project: name, filename: file})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'found') window.location.href = data.url;
+                else alert("File not found in this project!");
+            });
+        }
+    </script>
 </body>
 </html>
