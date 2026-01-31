@@ -3,7 +3,7 @@ import os, zipfile, subprocess, shutil, json, time, io
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = "/tmp/uploads" # রেন্ডারের জন্য /tmp ফোল্ডার ব্যবহার করা নিরাপদ
 DEFAULT_USER = "admin" 
 os.makedirs(os.path.join(UPLOAD_FOLDER, DEFAULT_USER), exist_ok=True)
 
@@ -44,8 +44,9 @@ def run(name):
         l_path = os.path.join(UPLOAD_FOLDER, DEFAULT_USER, name, "logs.txt")
         open(l_path, "w").close()
         f = open(l_path, "a", encoding="utf-8")
+        # -u flag and python path optimization
         processes[(DEFAULT_USER, name)] = subprocess.Popen(
-            ["python", "-u", main], cwd=ext, stdout=f, stderr=f, 
+            ["python3", "-u", main], cwd=ext, stdout=f, stderr=f, 
             stdin=subprocess.PIPE, text=True, bufsize=1
         )
     return redirect(url_for("index"))
@@ -90,5 +91,12 @@ def direct_download(p_name, f_name):
     if file_path: return send_file(file_path, as_attachment=True)
     return "File not found!", 404
 
+# Health check route for Render
+@app.route("/health")
+def health():
+    return "OK", 200
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3522)
+    # Render requires port from environment variable
+    port = int(os.environ.get("PORT", 3522))
+    app.run(host="0.0.0.0", port=port)
