@@ -23,6 +23,9 @@
             overflow-y: auto;
             scroll-behavior: smooth;
         }
+        /* কাস্টম স্ক্রলবার */
+        .log-container::-webkit-scrollbar { width: 5px; }
+        .log-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="p-4 pb-10">
@@ -57,22 +60,25 @@
 
                 <div class="p-4">
                     <div class="flex justify-between mb-1">
-                        <span class="text-[9px] text-gray-500 uppercase font-bold">Live Logs</span>
+                        <span class="text-[9px] text-gray-500 uppercase font-bold">Live Logs (Interactive)</span>
                         <button onclick="copyLogs('log-{{ app.name }}')" class="text-[9px] text-blue-400 font-bold">COPY</button>
                     </div>
-                    <div id="log-{{ app.name }}" class="log-container h-48 rounded-lg p-3 text-[10px] mb-4 border border-black shadow-inner">
+                    <div id="log-{{ app.name }}" class="log-container h-64 rounded-lg p-3 text-[10px] mb-4 border border-black shadow-inner">
                         Fetching logs...
                     </div>
 
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="cmd-{{ app.name }}" placeholder="Send command..." class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none">
-                        <button onclick="sendCmd('{{ app.name }}')" class="bg-blue-600 px-3 py-2 rounded-lg text-xs"><i class="fas fa-paper-plane"></i></button>
+                        <input type="text" id="cmd-{{ app.name }}" 
+                               onkeydown="if(event.key==='Enter') sendCmd('{{ app.name }}')"
+                               placeholder="Type option/command here..." 
+                               class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none text-white focus:border-blue-500">
+                        <button onclick="sendCmd('{{ app.name }}')" class="bg-blue-600 px-4 py-2 rounded-lg text-xs"><i class="fas fa-paper-plane"></i></button>
                     </div>
 
                     <div class="pt-3 border-t border-white/5">
                         <p class="text-[9px] text-gray-500 uppercase font-bold mb-2 tracking-tighter">Search & Download File</p>
                         <div class="flex gap-2">
-                            <input type="text" id="dl-{{ app.name }}" placeholder="e.g. data.db" class="flex-1 bg-transparent border-b border-white/10 text-[10px] py-1 outline-none">
+                            <input type="text" id="dl-{{ app.name }}" placeholder="e.g. session.db" class="flex-1 bg-transparent border-b border-white/10 text-[10px] py-1 outline-none text-gray-300">
                             <button onclick="downloadFile('{{ app.name }}')" class="text-blue-400 text-xs font-bold uppercase tracking-tighter">Download</button>
                         </div>
                     </div>
@@ -89,24 +95,30 @@
             alert("Logs copied!");
         }
 
+        // লগ রিফ্রেশ ফাংশন
         function refreshLogs() {
             {% for app in apps %}
             fetch('/get_log/{{ app.name }}')
                 .then(res => res.json())
                 .then(data => {
                     const el = document.getElementById('log-{{ app.name }}');
-                    const isScrolledToBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 50;
+                    // ইউজার কি একদম নিচে স্ক্রল করে আছে কিনা চেক করা
+                    const isScrolledToBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 100;
                     
                     el.textContent = data.log;
                     
+                    // যদি নিচে থাকে, তবে নতুন লগের সাথে অটো স্ক্রল হবে
                     if (isScrolledToBottom) {
                         el.scrollTop = el.scrollHeight;
                     }
                 });
             {% endfor %}
         }
-        setInterval(refreshLogs, 2000); // ২ সেকেন্ড পর পর আপডেট হবে
+        
+        // প্রতি ১.৫ সেকেন্ডে লগ আপডেট হবে
+        setInterval(refreshLogs, 1500);
 
+        // কমান্ড পাঠানোর ফাংশন
         function sendCmd(name) {
             const input = document.getElementById(`cmd-${name}`);
             const val = input.value;
@@ -116,8 +128,14 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({project: name, command: val})
-            }).then(() => { 
-                input.value = ''; 
+            }).then(res => res.json())
+            .then(data => {
+                if(data.status === 'sent') {
+                    input.value = ''; // কমান্ড পাঠানোর পর বক্স খালি হবে
+                    setTimeout(refreshLogs, 500); // দ্রুত লগ আপডেট
+                } else {
+                    alert("Error: " + (data.message || "Process not running"));
+                }
             });
         }
 
