@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bot Manager Pro</title>
+    <title>TG-HOST Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -21,6 +21,7 @@
             white-space: pre-wrap; 
             word-wrap: break-word;
             overflow-y: auto;
+            scroll-behavior: smooth;
         }
     </style>
 </head>
@@ -35,8 +36,8 @@
         <div class="glass-card p-5 mb-8">
             <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Upload Project (.zip)</h2>
             <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
-                <input type="file" name="file" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white">
-                <button type="submit" class="w-full bg-blue-600 py-3 rounded-xl font-bold">DEPLOY NOW</button>
+                <input type="file" name="file" accept=".zip" required class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition">DEPLOY NOW</button>
             </form>
         </div>
 
@@ -94,22 +95,29 @@
                 .then(res => res.json())
                 .then(data => {
                     const el = document.getElementById('log-{{ app.name }}');
+                    const isScrolledToBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 50;
+                    
                     el.textContent = data.log;
-                    el.scrollTop = el.scrollHeight;
+                    
+                    if (isScrolledToBottom) {
+                        el.scrollTop = el.scrollHeight;
+                    }
                 });
             {% endfor %}
         }
-        setInterval(refreshLogs, 3000);
+        setInterval(refreshLogs, 2000); // ২ সেকেন্ড পর পর আপডেট হবে
 
         function sendCmd(name) {
-            const val = document.getElementById(`cmd-${name}`).value;
+            const input = document.getElementById(`cmd-${name}`);
+            const val = input.value;
+            if(!val) return;
+            
             fetch('/run_termux_cmd', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({project: name, command: val})
             }).then(() => { 
-                document.getElementById(`cmd-${name}`).value = ''; 
-                document.getElementById(`cmd-${name}`).blur();
+                input.value = ''; 
             });
         }
 
