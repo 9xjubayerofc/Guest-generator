@@ -1,158 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TG-HOST Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>I'M JUBAYER - </title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #0b0f19; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .glass-card { 
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-        }
-        .log-container {
-            background: #000000;
-            color: #10b981;
-            font-family: 'Courier New', monospace;
-            white-space: pre-wrap; 
-            word-wrap: break-word;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-        /* কাস্টম স্ক্রলবার */
-        .log-container::-webkit-scrollbar { width: 5px; }
-        .log-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        :root { --bg: #000; --primary: #00ffff; --box: rgba(22, 27, 34, 0.8); --accent: #00ffff; }
+        body { background: var(--bg); color: #fff; font-family: 'Rajdhani', sans-serif; margin: 0; padding: 0; }
+        #particles-js { position: fixed; width: 100%; height: 100%; z-index: -1; }
+        .container { width: 92%; max-width: 600px; margin: 20px auto; }
+        .header { text-align: center; padding: 20px; font-family: 'Orbitron', sans-serif; color: var(--primary); letter-spacing: 2px; }
+        .box { background: var(--box); border: 1px solid rgba(0,255,255,0.2); border-radius: 15px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+        .upload-card { border: 2px dashed var(--primary); text-align: center; cursor: pointer; }
+        .status-badge { padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .status-running { background: rgba(0, 255, 65, 0.2); color: #00ff41; border: 1px solid #00ff41; }
+        .status-offline { background: rgba(255, 71, 87, 0.2); color: #ff4757; border: 1px solid #ff4757; }
+        .button-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .btn-m { padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; text-align: center; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; color: #fff; }
+        .run { background: #00d2ff; color: #000; }
+        .stop { background: #ff4757; }
+        .json-btn { background: #8e44ad; }
+        .edit-btn { background: #58a6ff; color: #000; }
+        .del-btn { background: #333; color: #ff4d4d; border: 1px solid #ff4d4d; }
+        pre { background: #080808; color: #00ff41; padding: 10px; border-radius: 8px; font-size: 10px; height: 100px; overflow-y: auto; border: 1px solid #222; }
+        
+        /* Modal Style */
+        #fmModal, #jsonModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; padding:15px; box-sizing: border-box; }
+        .modal-content { background: #161b22; height: 100%; border-radius: 15px; border: 1px solid var(--primary); display: flex; flex-direction: column; padding: 15px; }
+        .file-item { padding: 10px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
-<body class="p-4 pb-10">
+<body>
 
-    <div class="max-w-md mx-auto">
-        <header class="mb-6 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-blue-500 italic">TG<span class="text-white">HOST</span></h1>
-            <button onclick="location.reload()" class="bg-white/5 p-2 rounded-full"><i class="fas fa-sync-alt text-blue-400"></i></button>
-        </header>
-        
-        <div class="glass-card p-5 mb-8">
-            <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Upload Project (.zip)</h2>
-            <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
-                <input type="file" name="file" accept=".zip" required class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition">DEPLOY NOW</button>
-            </form>
-        </div>
+<div id="particles-js"></div>
 
-        <div class="space-y-6">
-            {% for app in apps %}
-            <div class="glass-card overflow-hidden border border-white/5">
-                <div class="p-4 flex justify-between items-center bg-white/5 border-b border-white/5">
-                    <h3 class="font-bold text-blue-100">{{ app.name }}</h3>
-                    <div class="flex gap-2">
-                        {% if not app.running %}
-                        <a href="/run/{{ app.name }}" class="bg-green-600 px-4 py-1 rounded-lg text-[10px] font-bold">START</a>
-                        {% else %}
-                        <a href="/stop/{{ app.name }}" class="bg-red-600 px-4 py-1 rounded-lg text-[10px] font-bold">STOP</a>
-                        {% endif %}
-                    </div>
-                </div>
+<div class="container">
+    <div class="header"><h1>NAYEM HOSTING</h1></div>
 
-                <div class="p-4">
-                    <div class="flex justify-between mb-1">
-                        <span class="text-[9px] text-gray-500 uppercase font-bold">Live Logs (Interactive)</span>
-                        <button onclick="copyLogs('log-{{ app.name }}')" class="text-[9px] text-blue-400 font-bold">COPY</button>
-                    </div>
-                    <div id="log-{{ app.name }}" class="log-container h-64 rounded-lg p-3 text-[10px] mb-4 border border-black shadow-inner">
-                        Fetching logs...
-                    </div>
-
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" id="cmd-{{ app.name }}" 
-                               onkeydown="if(event.key==='Enter') sendCmd('{{ app.name }}')"
-                               placeholder="Type option/command here..." 
-                               class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none text-white focus:border-blue-500">
-                        <button onclick="sendCmd('{{ app.name }}')" class="bg-blue-600 px-4 py-2 rounded-lg text-xs"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-
-                    <div class="pt-3 border-t border-white/5">
-                        <p class="text-[9px] text-gray-500 uppercase font-bold mb-2 tracking-tighter">Search & Download File</p>
-                        <div class="flex gap-2">
-                            <input type="text" id="dl-{{ app.name }}" placeholder="e.g. session.db" class="flex-1 bg-transparent border-b border-white/10 text-[10px] py-1 outline-none text-gray-300">
-                            <button onclick="downloadFile('{{ app.name }}')" class="text-blue-400 text-xs font-bold uppercase tracking-tighter">Download</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    <div class="box upload-card">
+        <form id="uploadForm" method="POST" action="/upload" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput" accept=".zip" required style="display:none;" onchange="document.getElementById('uploadForm').submit()">
+            <label for="fileInput" style="cursor:pointer; display:block;">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; color: var(--primary);"></i>
+                <p>Click to Upload ZIP Project</p>
+            </label>
+        </form>
     </div>
 
-    <script>
-        function copyLogs(id) {
-            const text = document.getElementById(id).innerText;
-            navigator.clipboard.writeText(text);
-            alert("Logs copied!");
-        }
-
-        // লগ রিফ্রেশ ফাংশন
-        function refreshLogs() {
-            {% for app in apps %}
-            fetch('/get_log/{{ app.name }}')
-                .then(res => res.json())
-                .then(data => {
-                    const el = document.getElementById('log-{{ app.name }}');
-                    // ইউজার কি একদম নিচে স্ক্রল করে আছে কিনা চেক করা
-                    const isScrolledToBottom = el.scrollHeight - el.clientHeight <= el.scrollTop + 100;
-                    
-                    el.textContent = data.log;
-                    
-                    // যদি নিচে থাকে, তবে নতুন লগের সাথে অটো স্ক্রল হবে
-                    if (isScrolledToBottom) {
-                        el.scrollTop = el.scrollHeight;
-                    }
-                });
-            {% endfor %}
-        }
+    {% for app in apps %}
+    <div class="box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--primary); font-family:'Orbitron';">{{ app.name }}</span>
+            <span id="status-{{ app.name }}" class="status-badge {% if app.running %}status-running{% else %}status-offline{% endif %}">
+                ● {% if app.running %}RUNNING{% else %}OFFLINE{% endif %}
+            </span>
+        </div>
         
-        // প্রতি ১.৫ সেকেন্ডে লগ আপডেট হবে
-        setInterval(refreshLogs, 1500);
+        <div class="button-grid">
+            <a href="/run/{{ app.name }}" class="btn-m run"><i class="fa-solid fa-play"></i> START</a>
+            <a href="/stop/{{ app.name }}" class="btn-m stop"><i class="fa-solid fa-stop"></i> STOP</a>
+            <button onclick="openFM('{{ app.name }}')" class="btn-m edit-btn"><i class="fa-solid fa-code"></i> EDIT</button>
+            <button onclick="searchJSON('{{ app.name }}')" class="btn-m json-btn"><i class="fa-solid fa-magnifying-glass"></i> JSONS</button>
+            <button onclick="confirmDelete('{{ app.name }}', '/delete/{{ app.name }}')" class="btn-m del-btn"><i class="fa-solid fa-trash"></i> DELETE</button>
+        </div>
+        <pre id="log-{{ app.name }}">Initializing logs...</pre>
+    </div>
+    {% endfor %}
+</div>
 
-        // কমান্ড পাঠানোর ফাংশন
-        function sendCmd(name) {
-            const input = document.getElementById(`cmd-${name}`);
-            const val = input.value;
-            if(!val) return;
-            
-            fetch('/run_termux_cmd', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({project: name, command: val})
-            }).then(res => res.json())
-            .then(data => {
-                if(data.status === 'sent') {
-                    input.value = ''; // কমান্ড পাঠানোর পর বক্স খালি হবে
-                    setTimeout(refreshLogs, 500); // দ্রুত লগ আপডেট
-                } else {
-                    alert("Error: " + (data.message || "Process not running"));
-                }
-            });
-        }
+<div id="jsonModal">
+    <div class="modal-content" style="max-height: 80vh; margin-top: 5vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:var(--primary); margin:0;">JSON FILES</h3>
+            <button onclick="document.getElementById('jsonModal').style.display='none'" style="background:#ff4d4d; border:none; color:white; padding:5px 15px; border-radius:5px;">X</button>
+        </div>
+        <div id="jsonFileList" style="overflow-y:auto; flex:1;"></div>
+    </div>
+</div>
 
-        function downloadFile(name) {
-            const file = document.getElementById(`dl-${name}`).value;
-            if(!file) return;
-            fetch('/search_and_download', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({project: name, filename: file})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'found') window.location.href = data.url;
-                else alert("File not found!");
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+    particlesJS('particles-js', { "particles": { "number": { "value": 50 }, "color": { "value": "#00ffff" }, "shape": { "type": "circle" }, "opacity": { "value": 0.5 }, "size": { "value": 3 }, "line_linked": { "enable": true, "distance": 150, "color": "#00ffff", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 2 } } });
+
+    function updateSystem() {
+        {% for app in apps %}
+            fetch('/get_log/{{ app.name }}').then(res => res.json()).then(data => {
+                document.getElementById('log-{{ app.name }}').innerText = data.log || "No logs yet...";
+                const badge = document.getElementById('status-{{ app.name }}');
+                badge.innerText = "● " + data.status;
+                badge.className = "status-badge " + (data.status === "RUNNING" ? "status-running" : "status-offline");
             });
-        }
-    </script>
+        {% endfor %}
+    }
+    setInterval(updateSystem, 3000);
+
+    function searchJSON(name) {
+        const list = document.getElementById('jsonFileList');
+        list.innerHTML = "<p>Searching...</p>";
+        document.getElementById('jsonModal').style.display = 'block';
+        fetch('/search_json/' + name).then(res => res.json()).then(data => {
+            if(data.json_files.length === 0) { list.innerHTML = "<p>No JSON files found.</p>"; return; }
+            let html = "";
+            data.json_files.forEach(f => {
+                html += `<div class="file-item">
+                    <span>${f.name}</span>
+                    <a href="/download_file?project=${name}&filename=${f.path}" style="color:#00ff41; text-decoration:none;"><i class="fa-solid fa-download"></i></a>
+                </div>`;
+            });
+            list.innerHTML = html;
+        });
+    }
+
+    function confirmDelete(name, url) {
+        Swal.fire({ title: 'Delete?', text: name, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ff4d4d' }).then(res => { if(res.isConfirmed) window.location.href = url; });
+    }
+</script>
 </body>
 </html>
