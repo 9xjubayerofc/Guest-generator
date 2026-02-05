@@ -1,4 +1,7 @@
+requests
+pycryptodome
+colorama
+psutil
+urllib3
 flask
 gunicorn
-aiohttp
-blackboxprotobuf
